@@ -1,6 +1,7 @@
 // ROS Library
 #include <ros.h>
 #include <std_msgs/Float32.h>
+#include <std_msgs/String.h>
 
 // I2Cdev and MP6050 libraries
 #include "I2Cdev.h"
@@ -68,16 +69,60 @@ ros::Publisher chatter_roll("roll", &roll_msg);
 
 
 // ================================================================
+// ===                      ROS SUBSCRIBER                      ===
+// ================================================================
+
+void yaw_led(const std_msgs::Float32& yaw){
+  //if yaw is greater than 0
+  if(yaw.data >= 0){
+    digitalWrite(4, HIGH-digitalRead(4));
+  } else {
+    digitalWrite(4, LOW-digitalRead(4));
+  }
+}
+
+void pitch_led(const std_msgs::Float32& pitch){
+  //if pitch is greater than 0
+  if(pitch.data >= 0){
+    digitalWrite(6, HIGH-digitalRead(6));
+  } else {
+    digitalWrite(6, LOW-digitalRead(6));
+  }
+}
+
+void roll_led(const std_msgs::Float32& roll){
+  //if roll is greater than 0
+  if(roll.data >= 0){
+    digitalWrite(8, HIGH-digitalRead(8));
+  } else {
+    digitalWrite(8, LOW-digitalRead(8));
+  }
+}
+
+ros::Subscriber<std_msgs::Float32> sub_yaw("yaw", &yaw_led);
+ros::Subscriber<std_msgs::Float32> sub_pitch("pitch", &pitch_led);
+ros::Subscriber<std_msgs::Float32> sub_roll("roll", &roll_led);
+
+
+
+// ================================================================
 // ===                      INITIAL SETUP                       ===
 // ================================================================
 
 void setup() {
     // set up for ROS
+    pinMode(4, OUTPUT);
+    pinMode(6, OUTPUT);
+    pinMode(8, OUTPUT);
     pinMode(13, OUTPUT);
     nh.initNode();
     nh.advertise(chatter_yaw);
     nh.advertise(chatter_pitch);
     nh.advertise(chatter_roll);
+
+    nh.subscribe(sub_yaw);
+    nh.subscribe(sub_pitch);
+    nh.subscribe(sub_roll);
     
     // join I2C bus (I2Cdev library doesn't do this automatically)
     #if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
@@ -88,9 +133,7 @@ void setup() {
     #endif
 
     // initialize serial communication
-    // (115200 chosen because it is required for Teapot Demo output, but it's
-    // really up to you depending on your project)
-    Serial.begin(115200);
+    Serial.begin(57600);
     while (!Serial); // wait for Leonardo enumeration, others continue immediately
 
     // NOTE: 8MHz or slower host processors, like the Teensy @ 3.3V or Arduino
